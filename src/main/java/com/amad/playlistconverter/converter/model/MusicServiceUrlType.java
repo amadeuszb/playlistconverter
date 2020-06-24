@@ -1,5 +1,5 @@
 package com.amad.playlistconverter.converter.model;
 
-public enum MusicUrlType {
+public enum MusicServiceUrlType {
     YOUTUBE, SPOTIFY, APPLE_MUSIC
 }
