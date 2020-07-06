@@ -1,14 +1,13 @@
 package com.amad.playlistconverter.converter.controllers;
 
 import com.amad.playlistconverter.converter.model.MusicUrl;
-import com.amad.playlistconverter.converter.model.StreamsMusicUrls;
+import com.amad.playlistconverter.converter.model.StreamMusicUrls;
 import com.amad.playlistconverter.converter.services.ConverterService;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-
-import java.awt.*;
-
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
@@ -23,7 +22,7 @@ public class ConverterController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public StreamsMusicUrls convertUrl(@RequestBody MusicUrl url){
-        return converterService.convertSong(url.getUrl());
+    public StreamMusicUrls convertUrl(@RequestBody MusicUrl songUrl) {
+        return converterService.convertSong(songUrl.getUrl());
     }
 }

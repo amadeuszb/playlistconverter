@@ -1,12 +1,13 @@
 package com.amad.playlistconverter.musicservices;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MusicService {
 
-    String getTitle(String url);
+    Optional<String> getSongTitle(String url);
 
-    String getUrl(String title);
+    Optional<String> getSongUrl(String title);
 
     List<String> getTitlesOfPlaylist(String url);
 
