@@ -1,63 +1,75 @@
 package com.amad.playlistconverter.converter.services;
 
 import com.amad.playlistconverter.converter.model.MusicServiceUrlType;
-import com.amad.playlistconverter.converter.model.StreamsMusicUrls;
+import com.amad.playlistconverter.converter.model.StreamMusicUrls;
 import com.amad.playlistconverter.musicservices.MusicService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class ConverterService {
 
-    private MusicService youtubeService;
-    private MusicService spotifyService;
-    private MusicService appleMusicService;
+    private static final String youtubeUrlPattern = "youtube";
+    private static final String youtuBeUrlPattern = "youtu.be";
+    private static final String spotifyUrlPattern = "spotify";
+    private static final String appleUrlPattern = "apple";
+    private static final String emptyString = "";
+    private final MusicService youtubeService;
+    private final MusicService spotifyService;
+    private final MusicService appleMusicService;
 
-    public ConverterService(MusicService youtubeService, MusicService spotifyService, MusicService appleMusicService) {
+    public ConverterService(@Qualifier("spotifyService") MusicService spotifyService,
+                            @Qualifier("youtubeService") MusicService youtubeService,
+                            @Qualifier("youtubeService") MusicService appleMusicService) { //TODO: Mocked
         this.youtubeService = youtubeService;
         this.spotifyService = spotifyService;
         this.appleMusicService = appleMusicService;
     }
 
-    public StreamsMusicUrls convertSong(String url) {
+    public StreamMusicUrls convertSong(String url) {
         MusicServiceUrlType musicServiceUrlType = getUrlType(url);
-        String titleOfSong = getTitleOfSong(url, musicServiceUrlType);
-        return findSongsOnAllServices(titleOfSong);
+        Optional<String> titleOfSong = getTitleOfSong(url, musicServiceUrlType);
+        return titleOfSong.map(this::findSongsInAllServices).orElseGet(StreamMusicUrls::new);
     }
 
     //TODO: Add actual url in future
-    private StreamsMusicUrls findSongsOnAllServices(String titleOfSong){
-        StreamsMusicUrls streamsMusicUrls = new StreamsMusicUrls();
-        String youtubeUrl = youtubeService.getUrl(titleOfSong);
-        String spotifyUrl = spotifyService.getUrl(titleOfSong);
-        String appleUrl = appleMusicService.getUrl(titleOfSong);
-        streamsMusicUrls.setYoutube(youtubeUrl);
-        streamsMusicUrls.setSpotify(spotifyUrl);
-        streamsMusicUrls.setAppleMusic(appleUrl);
-        return streamsMusicUrls;
+    private StreamMusicUrls findSongsInAllServices(String titleOfSong) {
+        StreamMusicUrls streamMusicUrls = new StreamMusicUrls();
+        String youtubeUrl = youtubeService.getSongUrl(titleOfSong).orElse(emptyString);
+        String spotifyUrl = spotifyService.getSongUrl(titleOfSong).orElse(emptyString);
+        String appleUrl = appleMusicService.getSongUrl(titleOfSong).orElse(emptyString);
+        streamMusicUrls.setYoutube(youtubeUrl);
+        streamMusicUrls.setSpotify(spotifyUrl);
+        streamMusicUrls.setAppleMusic(appleUrl);
+        return streamMusicUrls;
     }
 
-    private String getTitleOfSong(String url, MusicServiceUrlType musicServiceUrlType) {
+    private Optional<String> getTitleOfSong(String url, MusicServiceUrlType musicServiceUrlType) {
         switch (musicServiceUrlType) {
             case SPOTIFY:
-                return spotifyService.getTitle(url);
+                return spotifyService.getSongTitle(url);
             case YOUTUBE:
-                return youtubeService.getTitle(url);
+                return youtubeService.getSongTitle(url);
             case APPLE_MUSIC:
-                return appleMusicService.getTitle(url);
+                return appleMusicService.getSongTitle(url);
             default:
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("Music service type not recognised");
         }
     }
 
     private MusicServiceUrlType getUrlType(String url) {
-        if (url.contains("spotify")) {
+        if (url.contains(spotifyUrlPattern)) {
             return MusicServiceUrlType.SPOTIFY;
-        } else if (url.contains("apple")) {
-            return MusicServiceUrlType.APPLE_MUSIC;
-        } else if (url.contains("youtube") || url.contains("youtu.be")) {
-            return MusicServiceUrlType.YOUTUBE;
         } else {
-            throw new IllegalArgumentException();
+            if (url.contains(appleUrlPattern)) {
+                return MusicServiceUrlType.APPLE_MUSIC;
+            } else if (url.contains(youtubeUrlPattern) || url.contains(youtuBeUrlPattern)) {
+                return MusicServiceUrlType.YOUTUBE;
+            } else {
+                throw new IllegalArgumentException("Provided url is not supported");
+            }
         }
     }
 }

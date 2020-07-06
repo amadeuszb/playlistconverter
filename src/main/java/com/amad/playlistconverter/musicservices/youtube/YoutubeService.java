@@ -8,33 +8,37 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
-@Service
+@Service("youtubeService")
 public class YoutubeService implements MusicService {
 
     private final YoutubeApiService youtubeApiService;
+    private final String youtubeVideoUrlParameter = "v";
+    private final String youtubeVideoUrl = "youtube.pl/watch?v=";
 
     public YoutubeService(YoutubeApiService youtubeApiService) {
         this.youtubeApiService = youtubeApiService;
     }
 
     @Override
-    public String getTitle(String url) {
-        String videoId = getVideoId(url);
+    public Optional<String> getSongTitle(String url) {
+        String videoId = getVideoId(url).orElseThrow(() -> new IllegalArgumentException("Provided url does not contain video id"));
         try {
-            return youtubeApiService.findVideoTitle(videoId);
-        } catch (IOException e) {
-            return "";
+            return youtubeApiService.findVideoTitle(videoId).map(this::cutParenthesisInSongTitle);
+        } catch (IOException ex) {
+            return Optional.empty();
         }
     }
 
     @Override
-    public String getUrl(String title) {
-        String url = "youtube.pl/watch?v=";
+    public Optional<String> getSongUrl(String title) {
         try {
-            return url + youtubeApiService.findId(title);
-        } catch (IOException e) {
-            return url;
+            Optional<String> videoId = youtubeApiService.findVideoId(title);
+            return videoId.map(s -> youtubeVideoUrl + s);
+        } catch (IOException ex) {
+            //TODO: Add logger
+            return Optional.empty();
         }
     }
 
@@ -48,13 +52,17 @@ public class YoutubeService implements MusicService {
         return null;
     }
 
-    private String getVideoId(String url) {
+    private Optional<String> getVideoId(String videoUrl) {
         MultiValueMap<String, String> parameters;
         parameters = UriComponentsBuilder
-                .fromUriString(url)
+                .fromUriString(videoUrl)
                 .build()
                 .getQueryParams();
-        //TODO
-        return parameters.get("v").get(0);
+        return parameters.get(youtubeVideoUrlParameter).stream().findFirst();
+    }
+
+    private String cutParenthesisInSongTitle(String songTitle) {
+        return songTitle.replaceAll("\\([^()]*\\)", "")
+                .replaceAll("\\[[^()]*\\]", "");
     }
 }

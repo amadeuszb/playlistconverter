@@ -2,18 +2,19 @@ package com.amad.playlistconverter.musicservices.youtube.services;
 
 import com.amad.playlistconverter.musicservices.youtube.YoutubeServiceProperties;
 import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.model.SearchListResponse;
-import com.google.api.services.youtube.model.VideoListResponse;
+import com.google.api.services.youtube.model.*;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class YoutubeApiService {
 
-    YouTube youTube;
-    YoutubeServiceProperties youtubeServiceProperties;
-    String apiUrl;
+    private final YouTube youTube;
+    private final YoutubeServiceProperties youtubeServiceProperties;
+    private final String apiUrl;
     private static final String snippet = "snippet";
 
     public YoutubeApiService(YoutubeServiceProperties youtubeServiceProperties, YouTube youTube) {
@@ -22,18 +23,28 @@ public class YoutubeApiService {
         apiUrl = youtubeServiceProperties.getApiUrl();
     }
 
-    public String findVideoTitle(String videoId) throws IOException {
+    public Optional<String> findVideoTitle(String videoId) throws IOException {
         YouTube.Videos.List request = youTube.videos()
                 .list(snippet);
         VideoListResponse response = request.setId(videoId).execute();
-        return response.getItems().get(0).getSnippet().getTitle();
+        List<Video> videoResults = response.getItems();
+        return videoResults
+                .stream()
+                .findFirst()
+                .map(Video::getSnippet)
+                .map(VideoSnippet::getTitle);
     }
-    public String findId(String videoTitle) throws IOException {
+
+    public Optional<String> findVideoId(String videoTitle) throws IOException {
         YouTube.Search.List request = youTube.search()
                 .list(snippet);
         SearchListResponse response = request
                 .setQ(videoTitle)
                 .execute();
-        return response.getItems().get(0).getId().getVideoId();
+        List<SearchResult> searchResults = response.getItems();
+        return searchResults.stream()
+                .findFirst()
+                .map(SearchResult::getId)
+                .map(ResourceId::getVideoId);
     }
 }

@@ -17,30 +17,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
-import java.util.Collection;
 import java.util.Collections;
 
 @Configuration
 public class YoutubeConfiguration {
 
-    private static final String CLIENT_SECRETS = "client_secret.json";
-    private static final Collection<String> SCOPES =
-            Collections.singletonList("https://www.googleapis.com/auth/youtube.readonly");
-
+    private final YoutubeServiceProperties youtubeServiceProperties;
     private static final String APPLICATION_NAME = "Playlist Converter";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final String userId = "user";
+
+
+    public YoutubeConfiguration(YoutubeServiceProperties youtubeServiceProperties) {
+        this.youtubeServiceProperties = youtubeServiceProperties;
+    }
 
     public Credential authorize(final NetHttpTransport httpTransport) throws IOException {
         InputStream in;
         in = YoutubeConfiguration.class
                 .getClassLoader()
-                .getResourceAsStream(CLIENT_SECRETS);
+                .getResourceAsStream(youtubeServiceProperties.getSecret());
         GoogleClientSecrets clientSecrets;
         clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow
-                .Builder(httpTransport, JSON_FACTORY, clientSecrets, SCOPES)
+                .Builder(httpTransport, JSON_FACTORY, clientSecrets, Collections.singletonList(youtubeServiceProperties.getScope()))
                 .build();
-        return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user");
+        return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userId);
     }
 
     @Bean
@@ -51,6 +53,4 @@ public class YoutubeConfiguration {
                 .setApplicationName(APPLICATION_NAME)
                 .build();
     }
-
-
 }
